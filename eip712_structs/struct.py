@@ -84,6 +84,8 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
         for k, v in self.values.items():
             if isinstance(v, EIP712Struct):
                 result[k] = v.data_dict()
+            elif isinstance(v, tuple) and len(v) > 0 and isinstance(v[0], EIP712Struct):
+                result[k] = tuple(m.data_dict() for m in v)
             else:
                 result[k] = v
         return result
@@ -105,7 +107,13 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
     def _gather_reference_structs(cls, struct_set):
         """Finds reference structs defined in this struct type, and inserts them into the given set.
         """
-        structs = [m[1] for m in cls.get_members() if isinstance(m[1], type) and issubclass(m[1], EIP712Struct)]
+        # structs = [m[1] for m in cls.get_members() if isinstance(m[1], type) and issubclass(m[1], EIP712Struct)]
+        structs = set()
+        for _, type_ in cls.get_members():
+            if isinstance(type_, Array):
+                structs.add(type_.member_type)
+            elif isinstance(type_, EIP712Struct):
+                structs.add(type_)
         for struct in structs:
             if struct not in struct_set:
                 struct_set.add(struct)

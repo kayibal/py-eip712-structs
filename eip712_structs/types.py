@@ -63,8 +63,18 @@ class Array(EIP712Type):
 
     def _encode_value(self, value):
         """Arrays are encoded by concatenating their encoded contents, and taking the keccak256 hash."""
-        encoder = self.member_type
-        encoded_values = [encoder.encode_value(v) for v in value]
+        if not isinstance(value, tuple):
+            raise ValueError("Array values must be tuples!")
+
+        if not all(isinstance(v, self.member_type) for v in value):
+            raise ValueError("Tried to encode array with heterogeneous members!")
+
+        try:
+            # path taken depends if member type is a struct,
+            #   soft check avoids cyclical imports
+            encoded_values = [v.hash_struct() for v in value]
+        except AttributeError:
+            encoded_values = [self.member_type.encode_value(v) for v in value]
         return keccak(b''.join(encoded_values))
 
 

@@ -286,3 +286,27 @@ def test_value_access():
 
     with pytest.raises(TypeError):
         del foo['s']
+
+
+def test_encode_complex_array():
+    class Item(EIP712Struct):
+        address = Address()
+        data = String()
+
+    class Container(EIP712Struct):
+        recipient = Address()
+        data = Array(Item)
+
+    container = Container(
+        recipient="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+        data = (
+            Item(address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", data="Hello"),
+            Item(address="0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", data="Hello"),
+        )
+    )
+
+    res = container.encode_value()
+    assert res == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xee\xee\xee' \
+                  b'\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee\xee' \
+                  b'\xee=rc\xf3\x8a_\x94\xae\xa1D\xb5\xbf\xb0U\xf8of\xfc[\xda>\x83\x9c' \
+                  b'\xa1\x05W#\xcb\x9b_\xf4\x01'
